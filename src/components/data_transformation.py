@@ -8,6 +8,7 @@ import pickle
 
 from sklearn.utils import shuffle
 from sklearn.model_selection import train_test_split
+from dataclasses import dataclass
 
 from src.exception import CustomException
 from src.logger import logging
@@ -16,9 +17,15 @@ from src.utils import load_data
 from src.components.data_ingestion import DataIngestion
 
 
+@dataclass
+class DataTransformationConfig:
+    train_data_path: str=os.path.join('artifacts','train.p')
+    test_data_path: str=os.path.join('artifacts','test.p')
+    validation_data_path: str=os.path.join('artifacts','valid.p')
+
 class DataTransformation:
     def __init__(self):
-        pass
+        self.data_transformation_config=DataTransformationConfig()
     
     def augment_brightness_camera_images(self,image):
         image1 = cv2.cvtColor(image,cv2.COLOR_RGB2HSV)
@@ -137,9 +144,9 @@ class DataTransformation:
             X_train, X_validation, y_train, y_validation = train_test_split(X_train, y_train, test_size=0.20, random_state=0)
             X_train, y_train = shuffle(X_train, y_train)
 
-            self.cache_data(X_train, y_train, "artifacts/train.p")
-            self.cache_data(X_validation, y_validation, "artifacts/valid.p")
-            self.cache_data(X_test, y_test, "artifacts/test.p")
+            self.cache_data(X_train, y_train, self.data_transformation_config.train_data_path)
+            self.cache_data(X_validation, y_validation, self.data_transformation_config.validation_data_path)
+            self.cache_data(X_test, y_test, self.data_transformation_config.test_data_path)
 
             return X_train.shape[0]
 
