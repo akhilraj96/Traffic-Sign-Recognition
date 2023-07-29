@@ -1,4 +1,7 @@
 numpy
 pandas
+opencv-python
+scikit-learn
+TensorFlow
 
 #-e .
