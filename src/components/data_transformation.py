@@ -141,7 +141,7 @@ class DataTransformation:
             X_train = X_train_gray
             X_test = X_test_gray
 
-            X_train, X_validation, y_train, y_validation = train_test_split(X_train, y_train, test_size=0.20, random_state=0)
+            X_train, X_validation, y_train, y_validation = train_test_split(X_train, y_train, test_size=0.20, random_state=42)
             X_train, y_train = shuffle(X_train, y_train)
 
             self.cache_data(X_train, y_train, self.data_transformation_config.train_data_path)

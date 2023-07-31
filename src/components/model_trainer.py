@@ -1,33 +1,13 @@
+import os
 import tensorflow as tf
 import pickle
 from tensorflow.keras.layers import Flatten, Conv2D, MaxPooling2D, Dense
+from tensorflow.keras.models import Sequential
 from tensorflow.keras.utils import to_categorical
 from tensorflow.keras.optimizers import Adam
 
 from src.utils import load_data
 from sklearn.utils import shuffle
-
-class model(tf.keras.Model):
-    def __init__(self):
-        super(model, self).__init__()
-        self.conv1 = Conv2D(6, kernel_size=(5, 5), activation='relu')
-        self.pool1 = MaxPooling2D(pool_size=(2, 2))
-        self.conv2 = Conv2D(16, kernel_size=(5, 5), activation='relu')
-        self.pool2 = MaxPooling2D(pool_size=(2, 2))
-        self.flatten = Flatten()
-        self.fc1 = Dense(120, activation='relu')
-        self.fc2 = Dense(84, activation='relu')
-        self.fc3 = Dense(43, activation='softmax')
-
-    def call(self, x):
-        x = self.conv1(x)
-        x = self.pool1(x)
-        x = self.conv2(x)
-        x = self.pool2(x)
-        x = self.flatten(x)
-        x = self.fc1(x)
-        x = self.fc2(x)
-        return self.fc3(x)
 
 class ModelTrainer:
     def __init__(self, train_path, val_path, batch_size, epochs, learning_rate):
@@ -36,9 +16,22 @@ class ModelTrainer:
         self.batch_size = batch_size
         self.epochs = epochs
         self.learning_rate = learning_rate
-        self.model = model()
+        self.model = self.create_model()
 
-    def train(self):
+    def create_model(self):
+        model = Sequential([
+            Conv2D(6, kernel_size=(5, 5), activation='relu', input_shape=(32, 32, 1)),
+            MaxPooling2D(pool_size=(2, 2)),
+            Conv2D(16, kernel_size=(5, 5), activation='relu'),
+            MaxPooling2D(pool_size=(2, 2)),
+            Flatten(),
+            Dense(120, activation='relu'),
+            Dense(84, activation='relu'),
+            Dense(43, activation='softmax')
+        ])
+        return model
+
+    def train(self, save_path):
         X_train, y_train = load_data(self.train_path)
         X_valid, y_valid = load_data(self.val_path)
 
@@ -58,10 +51,9 @@ class ModelTrainer:
         # Training loop
         self.model.fit(train_dataset, epochs=self.epochs, validation_data=valid_dataset)
 
-    def save_model(self, save_path):
         # Save the trained model as a pickle file
-        with open(save_path, 'wb') as f:
-            pickle.dump(self.model, f)
+        os.makedirs(save_path, exist_ok=True)
+        self.model.save(save_path)
         print("Model saved")
 
 if __name__ == "__main__":
@@ -69,5 +61,4 @@ if __name__ == "__main__":
     val_path = "artifacts/valid.p"
 
     trainer = ModelTrainer(train_path=train_path, val_path=val_path, batch_size=128, epochs=10, learning_rate=0.001)
-    trainer.train()
-    trainer.save_model("artifacts/model.pkl")
+    trainer.train("artifacts/model")

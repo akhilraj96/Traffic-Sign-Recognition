@@ -3,36 +3,39 @@ import pandas as pd
 from src.exception import CustomException
 from src.utils import load_object
 
+import tensorflow as tf
+import pickle
+import numpy as np
+from tensorflow.keras.preprocessing.image import load_img, img_to_array
+from tensorflow.keras.applications.mobilenet_v2 import preprocess_input
+
 class PredictPipeline:
-    def __init__(self):
-        pass
+    def __init__(self, model_path):
+        self.model_path = model_path
+        self.model = self.load_model()
 
-    def predict(self,features):
+    def load_model(self):
+        model = tf.keras.models.load_model(self.model_path)
+        return model
 
-        try:
-            model_path='artifacts\model.pkl'
-            preprocessor_path='artifacts\preprocessor.pkl'
-            model = load_object(file_path=model_path)
-            preprocessor = load_object(file_path=preprocessor_path)
-            data_scaled=preprocessor.transform(features)
-            pred = model.predict(data_scaled)
+    def preprocess_image(self, image_path):
+        image = load_img(image_path, target_size=(32, 32))
+        image_array = img_to_array(image)
+        image_array = np.expand_dims(image_array, axis=0)
+        return preprocess_input(image_array)
 
-            return pred
+    def predict(self, image_path):
+        preprocessed_image = self.preprocess_image(image_path)
+        prediction = self.model.predict(preprocessed_image)
+        predicted_class = np.argmax(prediction)
+        return predicted_class
 
-        except Exception as e:
-            raise CustomException(e, sys)    
+# Example usage:
+if __name__ == "__main__":
+    model_path = 'artifacts/model'
+    image_path = "sign1.jpg"
 
+    pipeline = PredictPipeline(model_path)
+    predicted_class = pipeline.predict(image_path)
 
-class CustomData:
-    def __init__(self,
-        variable:str):
-
-        self.variable = variable
-
-    def get_data_as_data_frame(self):
-        try:
-            
-            return pd.DataFrame(custom_data_input_dict)
-
-        except Exception as e:
-            raise CustomException(e, sys)
+    print("Predicted class index:", predicted_class)
