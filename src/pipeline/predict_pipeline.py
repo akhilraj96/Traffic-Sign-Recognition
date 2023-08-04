@@ -38,7 +38,7 @@ class PredictPipeline:
 
 # Example usage:
 if __name__ == "__main__":
-    model_path = 'data/Saved_Models/VGGNet'
+    model_path = 'artifacts/Saved_Models/VGGNet'
     image_path = "data/test_images/001.jpg"
 
     pipeline = PredictPipeline(model_path)

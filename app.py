@@ -12,7 +12,7 @@ from keras.models import load_model
 from src.components.data_transformation import DataTransformation
 
 # Load your model
-model = load_model("data/Saved_Models/VGGNet")  # Path to your model
+model = load_model("artifacts/Saved_Models/VGGNet")  # Path to your model
 
 # Dictionary to label all traffic signs class.
 classes = {1: 'Speed limit (20km/h)',

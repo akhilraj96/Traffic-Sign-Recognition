@@ -167,6 +167,8 @@ class DataTransformation:
             save_data(X_test, y_test,
                       DataTransformationConfig.test_data_path)
 
+            logging.info("<><><><><><><><><><><><><><><>")
+
             return (
                 DataTransformationConfig.train_data_path,
                 DataTransformationConfig.validation_data_path,
@@ -177,7 +179,4 @@ class DataTransformation:
 
 
 if __name__ == "__main__":
-    data1 = DataIngestion()
-    p1, p2, p3 = data1.initiate_data_ingestion()
-    data2 = DataTransformation()
-    data2.initiate_data_transformation(p1, p2, p3)
+    pass

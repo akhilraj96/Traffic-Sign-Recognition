@@ -12,15 +12,15 @@ from src.logger import logging
 
 @dataclass
 class DataIngestionConfig:
-    train_data_path: str=os.path.join('data','train.p')
-    test_data_path: str=os.path.join('data','test.p')
-    validation_data_path: str=os.path.join('data','valid.p')
+    train_data_path: str = os.path.join('data', 'train.p')
+    test_data_path: str = os.path.join('data', 'test.p')
+    validation_data_path: str = os.path.join('data', 'valid.p')
 
 
 class DataIngestion:
     def __init__(self):
         self.ingestion_config = DataIngestionConfig()
-    
+
     def initiate_data_ingestion(self):
         logging.info("Entered the data ingestion method")
         try:
@@ -36,8 +36,9 @@ class DataIngestion:
             ref.close()
 
             logging.info('Download and Unzip completed')
-            
-            return(
+            logging.info("<><><><><><><><><><><><><><><><><><>")
+
+            return (
                 self.ingestion_config.train_data_path,
                 self.ingestion_config.test_data_path,
                 self.ingestion_config.validation_data_path
@@ -46,3 +47,6 @@ class DataIngestion:
         except Exception as e:
             raise CustomException(e, sys)
 
+
+if __name__ == "__main__":
+    pass

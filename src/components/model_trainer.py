@@ -28,7 +28,7 @@ class ModelTrainer:
 
         # Validation set preprocessing
         X_valid_preprocessed = DataTransformation().preprocess(data=X_valid)
-        DIR = 'Saved_Models'
+        DIR = 'artifacts/Saved_Models'
 
         # Create an instance of the LeNet class
         LeNet_Model = LaNet(n_out=n_classes)
@@ -68,9 +68,9 @@ class ModelTrainer:
                 epoch + 1, (validation_accuracy * 100)))
 
         # Save the model
-        LeNet_Model.model.save(os.path.join('artifacts', DIR, model_name))
+        LeNet_Model.model.save(os.path.join(DIR, model_name))
         logging.info("Model saved in " +
-                     str(os.path.join('artifacts', DIR, model_name)))
+                     str(os.path.join(DIR, model_name)))
 
         VGGNet_Model = VGGnet(n_out=n_classes)
         model_name = "VGGNet"
@@ -127,8 +127,12 @@ class ModelTrainer:
                 i + 1, avg_epoch_loss, avg_epoch_accuracy * 100, validation_accuracy * 100))
 
         # Save the model using TensorFlow 2.x methods
-        VGGNet_Model.model.save(os.path.join('artifacts', DIR, model_name))
+        VGGNet_Model.model.save(os.path.join(DIR, model_name))
         logging.info("Model saved in " +
-                     str(os.path.join('artifacts', DIR, model_name)))
+                     str(os.path.join(DIR, model_name)))
 
         return validation_accuracy
+
+
+if __name__ == "__main__":
+    pass
