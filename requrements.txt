@@ -4,5 +4,7 @@ opencv-python
 scikit-learn
 TensorFlow
 Pillow
+matplotlib
+scikit-image
 
 #-e .

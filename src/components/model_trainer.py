@@ -1,64 +1,134 @@
 import os
+import sys
+import numpy as np
 import tensorflow as tf
 import pickle
-from tensorflow.keras.layers import Flatten, Conv2D, MaxPooling2D, Dense
-from tensorflow.keras.models import Sequential
-from tensorflow.keras.utils import to_categorical
-from tensorflow.keras.optimizers import Adam
 
-from src.utils import load_data
 from sklearn.utils import shuffle
 
+from src.components.model import LaNet, VGGnet
+from src.components.data_transformation import DataTransformation
+from src.exception import CustomException
+from src.logger import logging
+from src.utils import load_data
+
+
 class ModelTrainer:
-    def __init__(self, train_path, val_path, batch_size, epochs, learning_rate):
-        self.train_path = train_path
-        self.val_path = val_path
+    def __init__(self, batch_size=64, epochs=30, learning_rate=0.001):
         self.batch_size = batch_size
         self.epochs = epochs
         self.learning_rate = learning_rate
-        self.model = self.create_model()
 
-    def create_model(self):
-        model = Sequential([
-            Conv2D(6, kernel_size=(5, 5), activation='relu', input_shape=(32, 32, 1)),
-            MaxPooling2D(pool_size=(2, 2)),
-            Conv2D(16, kernel_size=(5, 5), activation='relu'),
-            MaxPooling2D(pool_size=(2, 2)),
-            Flatten(),
-            Dense(120, activation='relu'),
-            Dense(84, activation='relu'),
-            Dense(43, activation='softmax')
-        ])
-        return model
+    def train(self, train_path, val_path):
+        logging.info("Entered the Model Trainer method")
+        X_train, y_train = load_data(train_path)
+        X_valid, y_valid = load_data(val_path)
 
-    def train(self, save_path):
-        X_train, y_train = load_data(self.train_path)
-        X_valid, y_valid = load_data(self.val_path)
+        n_classes = len(np.unique(y_train))
 
-        # Convert labels to one-hot encoding
-        y_train = to_categorical(y_train, 43)
-        y_valid = to_categorical(y_valid, 43)
+        # Validation set preprocessing
+        X_valid_preprocessed = DataTransformation().preprocess(data=X_valid)
+        DIR = 'Saved_Models'
 
-        # Create a TensorFlow Dataset for efficient data batching
-        train_dataset = tf.data.Dataset.from_tensor_slices((X_train, y_train)).shuffle(len(X_train)).batch(self.batch_size)
-        valid_dataset = tf.data.Dataset.from_tensor_slices((X_valid, y_valid)).batch(self.batch_size)
+        # Create an instance of the LeNet class
+        LeNet_Model = LaNet(n_out=n_classes)
+        model_name = "LeNet"
 
-        # Compile the model
-        self.model.compile(optimizer=Adam(learning_rate=self.learning_rate),
-                           loss='categorical_crossentropy',
-                           metrics=['accuracy'])
+        # Create an optimizer
+        optimizer = tf.optimizers.Adam(learning_rate=LeNet_Model.learning_rate)
+
+        logging.info("Starting LeNet Training")
+        print()
+        print("LeNet Training...")
+        print()
 
         # Training loop
-        self.model.fit(train_dataset, epochs=self.epochs, validation_data=valid_dataset)
+        for epoch in range(self.epochs):
+            X_train, y_train = shuffle(X_train, y_train)
+            num_batches = len(y_train) // self.batch_size
 
-        # Save the trained model as a pickle file
-        os.makedirs(save_path, exist_ok=True)
-        self.model.save(save_path)
-        print("Model saved")
+            for batch_num in range(num_batches):
+                start_idx = batch_num * self.batch_size
+                end_idx = start_idx + self.batch_size
+                batch_x, batch_y = X_train[start_idx:
+                                           end_idx], y_train[start_idx:end_idx]
 
-if __name__ == "__main__":
-    train_path = "artifacts/train.p"
-    val_path = "artifacts/valid.p"
+                with tf.GradientTape() as tape:
+                    logits = LeNet_Model.model(batch_x, training=True)
+                    loss_value = LeNet_Model.loss(logits, batch_y)
 
-    trainer = ModelTrainer(train_path=train_path, val_path=val_path, batch_size=128, epochs=10, learning_rate=0.001)
-    trainer.train("artifacts/model")
+                gradients = tape.gradient(
+                    loss_value, LeNet_Model.trainable_variables)
+                optimizer.apply_gradients(
+                    zip(gradients, LeNet_Model.trainable_variables))
+
+            validation_accuracy = LeNet_Model.evaluate(
+                X_valid_preprocessed, y_valid)
+            print("Epoch {} : Validation Accuracy = {:.3f}%".format(
+                epoch + 1, (validation_accuracy * 100)))
+
+        # Save the model
+        LeNet_Model.model.save(os.path.join('artifacts', DIR, model_name))
+        logging.info("Model saved in " +
+                     str(os.path.join('artifacts', DIR, model_name)))
+
+        VGGNet_Model = VGGnet(n_out=n_classes)
+        model_name = "VGGNet"
+
+        # Initialize optimizer
+        optimizer = tf.optimizers.Adam(
+            learning_rate=VGGNet_Model.learning_rate)
+
+        logging.info("Starting VGGNet Training")
+        print()
+        print("VGGNet Training...")
+        print()
+        for i in range(self.epochs):
+            X_train, y_train = shuffle(X_train, y_train)
+            num_batches = len(y_train) // self.batch_size
+
+            # Initialize variables to accumulate losses and accuracies
+            total_loss = 0.0
+            total_accuracy = 0.0
+
+            for batch_num in range(num_batches):
+                start_idx = batch_num * self.batch_size
+                end_idx = start_idx + self.batch_size
+                batch_x, batch_y = X_train[start_idx:
+                                           end_idx], y_train[start_idx:end_idx]
+
+                with tf.GradientTape() as tape:
+                    # Perform a training step and accumulate loss
+                    loss_value = VGGNet_Model.train_step(batch_x, batch_y)
+                    total_loss += loss_value
+
+                gradients = tape.gradient(
+                    loss_value, VGGNet_Model.trainable_variables)
+                gradients = [grad if grad is not None else tf.zeros_like(
+                    var) for grad, var in zip(gradients, VGGNet_Model.trainable_variables)]
+
+                optimizer.apply_gradients(
+                    zip(gradients, VGGNet_Model.trainable_variables))
+
+                # Compute batch accuracy
+                logits = VGGNet_Model.model(batch_x)
+                batch_accuracy = VGGNet_Model.accuracy(logits, batch_y)
+                total_accuracy += batch_accuracy
+
+            # Calculate average loss and accuracy for the epoch
+            avg_epoch_loss = total_loss / num_batches
+            avg_epoch_accuracy = total_accuracy / num_batches
+
+            # Evaluate the model on the validation set
+            validation_accuracy = VGGNet_Model.evaluate(
+                X_valid_preprocessed, y_valid)
+
+            print("EPOCH {} : Loss = {:.4f}, Training Accuracy = {:.3f}%, Validation Accuracy = {:.3f}%".format(
+                i + 1, avg_epoch_loss, avg_epoch_accuracy * 100, validation_accuracy * 100))
+
+        # Save the model using TensorFlow 2.x methods
+        VGGNet_Model.model.save(os.path.join('artifacts', DIR, model_name))
+        logging.info("Model saved in " +
+                     str(os.path.join('artifacts', DIR, model_name)))
+
+        return validation_accuracy
