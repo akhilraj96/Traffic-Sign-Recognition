@@ -162,7 +162,7 @@ cython_debug/
 
 
 # Extensions
-src/Notebook
+*.ipynb
 # Folders
 data/
 artifacts/
