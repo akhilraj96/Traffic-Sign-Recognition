@@ -27,7 +27,8 @@ class DataIngestion:
             logging.info("Beginning Data download...")
 
             source_url = 'https://s3-us-west-1.amazonaws.com/udacity-selfdrivingcar/traffic-signs-data.zip'
-            # urllib.request.urlretrieve(source_url, './data/traffic-signs-data.zip')
+            urllib.request.urlretrieve(
+                source_url, './data/traffic-signs-data.zip')
 
             logging.info('Beginning file unzip')
 
