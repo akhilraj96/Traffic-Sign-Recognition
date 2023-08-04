@@ -162,7 +162,7 @@ cython_debug/
 
 
 # Extensions
-.ipynb
+*.ipynb
 # Folders
 data/
 artifacts/
